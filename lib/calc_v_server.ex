@@ -11,6 +11,9 @@ defmodule CalcVServer do
       :world
 
   """
+  def hello do
+    :world
+  end
   @u_server_name :g_u_calc_server
   @v_server_name :g_v_calc_server
   @w_server_name :g_w_calc_server
@@ -19,10 +22,10 @@ defmodule CalcVServer do
 
 
   def calcVel kind, velocitys_field, pressure, bc_field, information do
-    server_name = :global.whereis_name getName(kind)
-    send server_name, {:calc, velocitys_field, pressure, bc_field, information, self}
+    server = :global.whereis_name getName(kind)
+    send server, {:calc, velocitys_field, pressure, bc_field, information, self}
     receive do
-      {simbol, result, ^server_name} ->
+      {simbol, result, ^server} ->
         case simbol do
           :ok ->
             result
@@ -35,6 +38,7 @@ defmodule CalcVServer do
   def genCalcServer kind do
     pid = spawn(__MODULE__, :calc_server, [kind])
     :global.register_name(getName(kind), pid)
+    IO.puts "[Info] start calc_v_server <#{inspect pid}>"
   end
 
   def calc_server kind do
@@ -54,10 +58,6 @@ defmodule CalcVServer do
 
   defp getName kind do
     getFromKind kind, {@u_server_name, @v_server_name, @w_server_name}
-  end
-
-  defp getVel kind, velocitys_field do
-    getFromKind kind, velocitys_field
   end
 
 
