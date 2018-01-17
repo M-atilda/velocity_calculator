@@ -8,15 +8,13 @@ defmodule IncompressiveKK.Func do
   import IncompressiveKK.Util
 
 
-  def deriveVel kind, {x_velocity, y_velocity, z_velocity}=velocitys_field, pressure, bc_field,
+  def deriveVel kind, {x_velocity, y_velocity}=velocitys_field, pressure, bc_field,
     %{:x_size => x_size,
       :y_size => y_size,
-      :z_size => z_size,
       :dt => dt}=information do
     velocity = case kind do
                  :u -> x_velocity
                  :v -> y_velocity
-                 :w -> z_velocity
                end
     pressure_gradient = Task.async(__MODULE__, :calcPreGrad, [kind, pressure, information])
     diffusion = Task.async(__MODULE__, :calcDiffusion, [velocity, information])
@@ -24,14 +22,12 @@ defmodule IncompressiveKK.Func do
     pg_result = Task.await(pressure_gradient)
     d_result = Task.await(diffusion)
     av_result = Task.await(artificial_viscocity)
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-          if id(bc_field, {i,j,k}) == nil do
-            id(velocity, {i,j,k}) + dt * (-id(pg_result, {i,j,k}) + id(d_result, {i,j,k}) - id(av_result, {i,j,k}))
-          else
-            id(bc_field, {i,j,k})
-          end
+    for j <- 0..(y_size-1) do
+      for i <- 0..(x_size-1) do
+        if id(bc_field, {i,j}) == nil do
+          id(velocity, {i,j}) + dt * (-id(pg_result, {i,j}) + id(d_result, {i,j}) - id(av_result, {i,j}))
+        else
+          id(bc_field, {i,j})
         end
       end
     end
@@ -39,138 +35,99 @@ defmodule IncompressiveKK.Func do
 
 
   def calcPreGrad :u, pressure, %{:dx => dx,
-                                  :x_size => x_size, :y_size => y_size, :z_size => z_size} do
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-            if 0<i && 0<j && 0<k && i<(x_size-1) && j<(y_size-1) && k<(z_size-1) do
-              (id(pressure, {i+1,j,k}) - id(pressure, {i-1,j,k})) / (2 * dx)
-            else
-              min_i = max 0, i-1
-              max_i = min (x_size-1), i+1
-              (id(pressure, {max_i,j,k}) - id(pressure, {min_i,j,k})) / dx
-            end
-        end end end
+                                  :x_size => x_size, :y_size => y_size} do
+    for j <- 0..(y_size-1) do
+      for i <- 0..(x_size-1) do
+        if 0<i && 0<j && i<(x_size-1) && j<(y_size-1) do
+          (id(pressure, {i+1,j}) - id(pressure, {i-1,j})) / (2 * dx)
+        else
+          min_i = max 0, i-1
+          max_i = min (x_size-1), i+1
+          (id(pressure, {max_i,j}) - id(pressure, {min_i,j})) / dx
+        end
+      end end
   end
-  def calcPreGrad :v, pressure, %{:dy => dy, :x_size => x_size, :y_size => y_size, :z_size => z_size} do
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-          if 0<i && 0<j && 0<k && i<(x_size-1) && j<(y_size-1) && k<(z_size-1) do
-            (id(pressure, {i,j+1,k}) - id(pressure, {i,j-1,k})) / (2 * dy)
-          else
-            min_j = max 0, j-1
-            max_j = min (y_size-1), j+1
-            (id(pressure, {i,max_j,k}) - id(pressure, {i,min_j,k})) / dy
-          end
-        end end end
-  end
-  def calcPreGrad :w, pressure, %{:dz => dz, :x_size => x_size, :y_size => y_size, :z_size => z_size} do
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-          if 0<i && 0<j && 0<k && i<x_size && j<y_size && k<z_size do
-            (id(pressure, {i,j,k+1}) - id(pressure, {i-1,j,k-1})) / (2 * dz)
-          else
-            min_k = max 0, k-1
-            max_k = min (z_size-1), k+1
-            (id(pressure, {i,j,max_k}) - id(pressure, {i,j,min_k})) / dz
-          end
-        end end end
+  def calcPreGrad :v, pressure, %{:dy => dy, :x_size => x_size, :y_size => y_size} do
+    for j <- 0..(y_size-1) do
+      for i <- 0..(x_size-1) do
+        if 0<i && 0<j && i<(x_size-1) && j<(y_size-1) do
+          (id(pressure, {i,j+1}) - id(pressure, {i,j-1})) / (2 * dy)
+        else
+          min_j = max 0, j-1
+          max_j = min (y_size-1), j+1
+          (id(pressure, {i,max_j}) - id(pressure, {i,min_j})) / dy
+        end
+      end end
   end
 
 
   def calcDiffusion velocity, %{:dx => dx,
                                 :dy => dy,
-                                :dz => dz,
                                 :x_size => x_size,
                                 :y_size => y_size,
-                                :z_size => z_size,
                                 :Re => re} do
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-          if 0<i && 0<j && 0<k && i<(x_size-1) && j<(y_size-1) && k<(z_size-1) do
-            df2dx2 = calcDiffusionHelper id(velocity, {i+1,j,k}), id(velocity, {i,j,k}), id(velocity, {i-1,j,k}), dx
-            df2dy2 = calcDiffusionHelper id(velocity, {i,j+1,k}), id(velocity, {i,j,k}), id(velocity, {i,j-1,k}), dy
-            df2dz2 = calcDiffusionHelper id(velocity, {i,j,k+1}), id(velocity, {i,j,k}), id(velocity, {i,j,k-1}), dz
-            (df2dx2 + df2dy2 + df2dz2) / re
-          else
-            min_i = max 0, i-1
-            max_i = min (x_size-1), i+1
-            min_j = max 0, j-1
-            max_j = min (y_size-1), j+1
-            min_k = max 0, k-1
-            max_k = min (z_size-1), k+1
-            x_width = dx * (max_i - min_i)
-            y_width = dy * (max_j - min_j)
-            z_width = dz * (max_k - min_k)
-            df2dx2 = calcDiffusionHelper id(velocity, {max_i,j,k}), id(velocity, {i,j,k}), id(velocity, {min_i,j,k}), dx
-            df2dy2 = calcDiffusionHelper id(velocity, {i,max_j,k}), id(velocity, {i,j,k}), id(velocity, {i,min_j,k}), dy
-            df2dz2 = calcDiffusionHelper id(velocity, {i,j,max_k}), id(velocity, {i,j,k}), id(velocity, {i,j,min_k}), dz
-            (df2dx2 + df2dy2 + df2dz2) / re
-          end
+    for j <- 0..(y_size-1) do
+      for i <- 0..(x_size-1) do
+        if 0<i && 0<j && i<(x_size-1) && j<(y_size-1) do
+          df2dx2 = calcDiffusionHelper id(velocity, {i+1,j}), id(velocity, {i,j}), id(velocity, {i-1,j}), dx
+          df2dy2 = calcDiffusionHelper id(velocity, {i,j+1}), id(velocity, {i,j}), id(velocity, {i,j-1}), dy
+          (df2dx2 + df2dy2) / re
+        else
+          min_i = max 0, i-1
+          max_i = min (x_size-1), i+1
+          min_j = max 0, j-1
+          max_j = min (y_size-1), j+1
+          x_width = dx * (max_i - min_i)
+          y_width = dy * (max_j - min_j)
+          df2dx2 = calcDiffusionHelper id(velocity, {max_i,j}), id(velocity, {i,j}), id(velocity, {min_i,j}), dx
+          df2dy2 = calcDiffusionHelper id(velocity, {i,max_j}), id(velocity, {i,j}), id(velocity, {i,min_j}), dy
+          (df2dx2 + df2dy2) / re
         end
       end
     end
   end
-  defp calcDiffusionHelper f_ijk1p, f_ijk, f_ijk1m, delta do
-    ((f_ijk1p - f_ijk) - (f_ijk - f_ijk1m)) / (delta * delta)
+  defp calcDiffusionHelper f_ij1p, f_ij, f_ij1m, delta do
+    ((f_ij1p - f_ij) - (f_ij - f_ij1m)) / (delta * delta)
   end
   
 
   def calcArtiVisc velocity, velocitys_field, %{:dx => dx,
                                                 :dy => dy,
-                                                :dz => dz,
                                                 :x_size => x_size,
-                                                :y_size => y_size,
-                                                :z_size => z_size} do
-    for k <- 0..(z_size-1) do
-      for j <- 0..(y_size-1) do
-        for i <- 0..(x_size-1) do
-          if 1<i && 1<j && 1<k && i<(x_size-2) && j<(y_size-2) && k<(z_size-2) do
-            udfdx = calcArtiViscX {i,j,k}, velocity, velocitys_field, dx
-            vdfdy = calcArtiViscY {i,j,k}, velocity, velocitys_field, dy
-            wdfdz = calcArtiViscZ {i,j,k}, velocity, velocitys_field, dz
-            udfdx + vdfdy + wdfdz
-          else
-            0
-          end
+                                                :y_size => y_size} do
+    for j <- 0..(y_size-1) do
+      for i <- 0..(x_size-1) do
+        if 1<i && 1<j && i<(x_size-2) && j<(y_size-2) do
+          udfdx = calcArtiViscX {i,j}, velocity, velocitys_field, dx
+          vdfdy = calcArtiViscY {i,j}, velocity, velocitys_field, dy
+          udfdx + vdfdy
+        else
+          0
         end
       end
     end
   end
-  defp calcArtiViscX {i,j,k}, f, {u, _v, _w}, dx do
-    f_ijk = id(f, {i,j,k})
-    f_ijk1p = id(f, {i+1,j,k})
-    f_ijk2p = id(f, {i+2,j,k})
-    f_ijk1m = id(f, {i-1,j,k})
-    f_ijk2m = id(f, {i-2,j,k})
-    u_ijk = id(u, {i,j,k})
-    calcArtiViscHelper u_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, dx
+  defp calcArtiViscX {i,j}, f, {u, _v}, dx do
+    f_ij = id(f, {i,j})
+    f_ij1p = id(f, {i+1,j})
+    f_ij2p = id(f, {i+2,j})
+    f_ij1m = id(f, {i-1,j})
+    f_ij2m = id(f, {i-2,j})
+    u_ij = id(u, {i,j})
+    calcArtiViscHelper u_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, dx
   end
-  defp calcArtiViscY {i,j,k}, f, {_u, v, _w}, dy do
-    f_ijk = id(f, {i,j,k})
-    f_ijk1p = id(f, {i,j+1,k})
-    f_ijk2p = id(f, {i,j+2,k})
-    f_ijk1m = id(f, {i,j-1,k})
-    f_ijk2m = id(f, {i,j-2,k})
-    v_ijk = id(v, {i,j,k})
-    calcArtiViscHelper v_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, dy
+  defp calcArtiViscY {i,j}, f, {_u, v}, dy do
+    f_ij = id(f, {i,j})
+    f_ij1p = id(f, {i,j+1})
+    f_ij2p = id(f, {i,j+2})
+    f_ij1m = id(f, {i,j-1})
+    f_ij2m = id(f, {i,j-2})
+    v_ij = id(v, {i,j})
+    calcArtiViscHelper v_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, dy
   end
-  defp calcArtiViscZ {i,j,k}, f, {_u, _v, w}, dz do
-    f_ijk = id(f, {i,j,k})
-    f_ijk1p = id(f, {i,j,k+1})
-    f_ijk2p = id(f, {i,j,k+2})
-    f_ijk1m = id(f, {i,j,k-1})
-    f_ijk2m = id(f, {i,j,k-2})
-    w_ijk = id(w, {i,j,k})
-    calcArtiViscHelper w_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, dz
+  defp calcArtiViscHelper vel_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, delta do
+    vel_ij * ((-f_ij2p + 8*f_ij1p - 8*f_ij1m + f_ij2m) / (12 * delta)) + abs(vel_ij) * ((f_ij2p - 4*f_ij1p + 6*f_ij - 4*f_ij1m + f_ij2m) / (4 * delta))
   end
-  defp calcArtiViscHelper vel_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, delta do
-    vel_ijk * ((-f_ijk2p + 8*f_ijk1p - 8*f_ijk1m + f_ijk2m) / (12 * delta)) + abs(vel_ijk) * ((f_ijk2p - 4*f_ijk1p + 6*f_ijk - 4*f_ijk1m + f_ijk2m) / (4 * delta))
-  end
-
 
 
 end #IncompressiveKK.func

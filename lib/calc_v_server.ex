@@ -14,7 +14,6 @@ defmodule CalcVServer do
   def hello, do: :world
   @u_server_name :g_u_calc_server
   @v_server_name :g_v_calc_server
-  @w_server_name :g_w_calc_server
   import IncompressiveKK.Func
   import IncompressiveKK.Util
 
@@ -55,7 +54,7 @@ defmodule CalcVServer do
 
 
   defp getName kind do
-    getFromKind kind, {@u_server_name, @v_server_name, @w_server_name}
+    getFromKind kind, {@u_server_name, @v_server_name}
   end
 
 
