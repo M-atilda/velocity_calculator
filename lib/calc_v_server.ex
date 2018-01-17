@@ -11,9 +11,7 @@ defmodule CalcVServer do
       :world
 
   """
-  def hello do
-    :world
-  end
+  def hello, do: :world
   @u_server_name :g_u_calc_server
   @v_server_name :g_v_calc_server
   @w_server_name :g_w_calc_server

@@ -28,10 +28,7 @@ defmodule IncompressiveKK.Func do
       for j <- 0..(y_size-1) do
         for i <- 0..(x_size-1) do
           if id(bc_field, {i,j,k}) == nil do
-            id(velocity, {i,j,k}) +
-            dt * (-id(pg_result, {i,j,k}) +
-              id(d_result, {i,j,k}) -
-              id(av_result, {i,j,k}))
+            id(velocity, {i,j,k}) + dt * (-id(pg_result, {i,j,k}) + id(d_result, {i,j,k}) - id(av_result, {i,j,k}))
           else
             id(bc_field, {i,j,k})
           end
@@ -49,8 +46,9 @@ defmodule IncompressiveKK.Func do
             if 0<i && 0<j && 0<k && i<(x_size-1) && j<(y_size-1) && k<(z_size-1) do
               (id(pressure, {i+1,j,k}) - id(pressure, {i-1,j,k})) / (2 * dx)
             else
-              #NOTE: should these edge differentials are calulated using one-side differential?
-              0
+              min_i = max 0, i-1
+              max_i = min (x_size-1), i+1
+              (id(pressure, {max_i,j,k}) - id(pressure, {min_i,j,k})) / dx
             end
         end end end
   end
@@ -61,7 +59,9 @@ defmodule IncompressiveKK.Func do
           if 0<i && 0<j && 0<k && i<(x_size-1) && j<(y_size-1) && k<(z_size-1) do
             (id(pressure, {i,j+1,k}) - id(pressure, {i,j-1,k})) / (2 * dy)
           else
-            0
+            min_j = max 0, j-1
+            max_j = min (y_size-1), j+1
+            (id(pressure, {i,max_j,k}) - id(pressure, {i,min_j,k})) / dy
           end
         end end end
   end
@@ -72,7 +72,9 @@ defmodule IncompressiveKK.Func do
           if 0<i && 0<j && 0<k && i<x_size && j<y_size && k<z_size do
             (id(pressure, {i,j,k+1}) - id(pressure, {i-1,j,k-1})) / (2 * dz)
           else
-            0
+            min_k = max 0, k-1
+            max_k = min (z_size-1), k+1
+            (id(pressure, {i,j,max_k}) - id(pressure, {i,j,min_k})) / dz
           end
         end end end
   end
@@ -94,7 +96,19 @@ defmodule IncompressiveKK.Func do
             df2dz2 = calcDiffusionHelper id(velocity, {i,j,k+1}), id(velocity, {i,j,k}), id(velocity, {i,j,k-1}), dz
             (df2dx2 + df2dy2 + df2dz2) / re
           else
-            0
+            min_i = max 0, i-1
+            max_i = min (x_size-1), i+1
+            min_j = max 0, j-1
+            max_j = min (y_size-1), j+1
+            min_k = max 0, k-1
+            max_k = min (z_size-1), k+1
+            x_width = dx * (max_i - min_i)
+            y_width = dy * (max_j - min_j)
+            z_width = dz * (max_k - min_k)
+            df2dx2 = calcDiffusionHelper id(velocity, {max_i,j,k}), id(velocity, {i,j,k}), id(velocity, {min_i,j,k}), dx
+            df2dy2 = calcDiffusionHelper id(velocity, {i,max_j,k}), id(velocity, {i,j,k}), id(velocity, {i,min_j,k}), dy
+            df2dz2 = calcDiffusionHelper id(velocity, {i,j,max_k}), id(velocity, {i,j,k}), id(velocity, {i,j,min_k}), dz
+            (df2dx2 + df2dy2 + df2dz2) / re
           end
         end
       end
@@ -154,10 +168,7 @@ defmodule IncompressiveKK.Func do
     calcArtiViscHelper w_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, dz
   end
   defp calcArtiViscHelper vel_ijk, f_ijk, f_ijk1p, f_ijk2p, f_ijk1m, f_ijk2m, delta do
-    vel_ijk *
-    ((-f_ijk2p + 8*f_ijk1p - 8*f_ijk1m + f_ijk2m) / (12 * delta)) +
-    abs(vel_ijk) *
-    ((f_ijk2p - 4*f_ijk1p + 6*f_ijk - 4*f_ijk1m + f_ijk2m) / (4 * delta))    
+    vel_ijk * ((-f_ijk2p + 8*f_ijk1p - 8*f_ijk1m + f_ijk2m) / (12 * delta)) + abs(vel_ijk) * ((f_ijk2p - 4*f_ijk1p + 6*f_ijk - 4*f_ijk1m + f_ijk2m) / (4 * delta))
   end
 
 
