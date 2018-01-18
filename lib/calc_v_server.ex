@@ -25,6 +25,7 @@ defmodule CalcVServer do
       {simbol, result, ^server} ->
         case simbol do
           :ok ->
+            IO.puts "[Info] velocity calculation finished #{inspect DateTime.utc_now}"
             result
           :error ->
             raise RuntimeError
