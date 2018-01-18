@@ -41,6 +41,7 @@ defmodule CalcVServer do
   def calc_server kind do
     receive do
       {:calc, velocitys_field, pressure, bc_field, information, client} ->
+        IO.puts "[Info] velocity calculation <#{inspect client}> #{inspect DateTime.utc_now}"
         try do
           result = deriveVel kind, velocitys_field, pressure, bc_field, information
           send client, {:ok, result, self}

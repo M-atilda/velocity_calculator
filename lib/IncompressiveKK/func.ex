@@ -22,8 +22,34 @@ defmodule IncompressiveKK.Func do
     pg_result = Task.await(pressure_gradient)
     d_result = Task.await(diffusion)
     av_result = Task.await(artificial_viscocity)
-    for j <- 0..(y_size-1) do
+    x_half_size = round((x_size-1) / 2)
+    y_half_size = round((y_size-1) / 2)
+    left_up_dp_task = Task.async(fn -> sumupPartially {0..x_half_size, 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    left_down_dp_task = Task.async(fn -> sumupPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    right_up_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    right_down_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    left_up_dp = Task.await(left_up_dp_task)
+    left_down_dp = Task.await(left_down_dp_task)
+    right_up_dp = Task.await(right_up_dp_task)
+    right_down_dp = Task.await(right_down_dp_task)
+    Enum.map(Enum.to_list(0..(y_size-1)), fn(j) ->
       for i <- 0..(x_size-1) do
+        cond do
+          i<(x_half_size+1) && j<(y_half_size+1) ->
+            id(left_up_dp, {i,j})
+          i<(x_half_size+1) && j>y_half_size ->
+            id(left_down_dp, {i,j-y_half_size-1})
+          i>x_half_size && j<(y_half_size+1) ->
+            id(right_up_dp, {i-x_half_size-1,j})
+          i>x_half_size && j>y_half_size ->
+            id(right_down_dp, {i-x_half_size-1,j-y_half_size-1})
+        end
+      end
+    end)
+  end
+  defp sumupPartially {x_range, y_range}, velocity, pg_result, d_result, av_result, bc_field, dt do
+    for j <- y_range do
+      for i <- x_range do
         if id(bc_field, {i,j}) == nil do
           id(velocity, {i,j}) + dt * (-id(pg_result, {i,j}) + id(d_result, {i,j}) - id(av_result, {i,j}))
         else
