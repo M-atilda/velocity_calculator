@@ -24,25 +24,25 @@ defmodule IncompressiveKK.Func do
     av_result = Task.await(artificial_viscocity)
     x_half_size = round((x_size-1) / 2)
     y_half_size = round((y_size-1) / 2)
-    left_up_dp_task = Task.async(fn -> sumupPartially {0..x_half_size, 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
-    left_down_dp_task = Task.async(fn -> sumupPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
-    right_up_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
-    right_down_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
-    left_up_dp = Task.await(left_up_dp_task, 60000)
-    left_down_dp = Task.await(left_down_dp_task, 60000)
-    right_up_dp = Task.await(right_up_dp_task, 60000)
-    right_down_dp = Task.await(right_down_dp_task, 60000)
+    left_up_task = Task.async(fn -> sumupPartially {0..x_half_size, 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    left_down_task = Task.async(fn -> sumupPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    right_up_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    right_down_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
+    left_up = Task.await(left_up_task, 60000)
+    left_down = Task.await(left_down_task, 60000)
+    right_up = Task.await(right_up_task, 60000)
+    right_down = Task.await(right_down_task, 60000)
     Enum.map(Enum.to_list(0..(y_size-1)), fn(j) ->
       for i <- 0..(x_size-1) do
         cond do
           i<(x_half_size+1) && j<(y_half_size+1) ->
-            id(left_up_dp, {i,j})
+            id(left_up, {i,j})
           i<(x_half_size+1) && j>y_half_size ->
-            id(left_down_dp, {i,j-y_half_size-1})
+            id(left_down, {i,j-y_half_size-1})
           i>x_half_size && j<(y_half_size+1) ->
-            id(right_up_dp, {i-x_half_size-1,j})
+            id(right_up, {i-x_half_size-1,j})
           i>x_half_size && j>y_half_size ->
-            id(right_down_dp, {i-x_half_size-1,j-y_half_size-1})
+            id(right_down, {i-x_half_size-1,j-y_half_size-1})
         end
       end
     end)
