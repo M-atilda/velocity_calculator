@@ -8,7 +8,7 @@ defmodule CalcVServerTest do
     p_field = List.duplicate([0|List.duplicate(1, 400)], 201)
     bc_field = for j <- 0..200 do
       for i <- 0..400 do
-        if 49==i || 49==j do
+        if 5<i && i<10 && 5<j && j<10 do
           0
         else
           nil

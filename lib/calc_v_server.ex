@@ -28,6 +28,7 @@ defmodule CalcVServer do
             IO.puts "[Info] velocity calculation finished #{inspect DateTime.utc_now}"
             result
           :error ->
+            IO.puts "[Error] #{inspect result}"
             raise RuntimeError
         end
     end
@@ -48,7 +49,7 @@ defmodule CalcVServer do
           send client, {:ok, result, self}
         rescue
           error ->
-            send client, {:error, inspect(error), self}
+            send client, {:error, error, self}
         end
     end
     calc_server kind

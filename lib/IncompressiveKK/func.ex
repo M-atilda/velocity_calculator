@@ -28,10 +28,10 @@ defmodule IncompressiveKK.Func do
     left_down_dp_task = Task.async(fn -> sumupPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
     right_up_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, velocity, pg_result, d_result, av_result, bc_field, dt end)
     right_down_dp_task = Task.async(fn -> sumupPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, velocity, pg_result, d_result, av_result, bc_field, dt end)
-    left_up_dp = Task.await(left_up_dp_task)
-    left_down_dp = Task.await(left_down_dp_task)
-    right_up_dp = Task.await(right_up_dp_task)
-    right_down_dp = Task.await(right_down_dp_task)
+    left_up_dp = Task.await(left_up_dp_task, 60000)
+    left_down_dp = Task.await(left_down_dp_task, 60000)
+    right_up_dp = Task.await(right_up_dp_task, 60000)
+    right_down_dp = Task.await(right_down_dp_task, 60000)
     Enum.map(Enum.to_list(0..(y_size-1)), fn(j) ->
       for i <- 0..(x_size-1) do
         cond do
