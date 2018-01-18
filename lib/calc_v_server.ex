@@ -46,6 +46,7 @@ defmodule CalcVServer do
         IO.puts "[Info] velocity calculation <#{inspect client}> #{inspect DateTime.utc_now}"
         try do
           result = deriveVel kind, velocitys_field, pressure, bc_field, information
+          IO.puts "[Info] calculation finished <#{inspect client}> #{inspect DateTime.utc_now}"
           send client, {:ok, result, self}
         rescue
           error ->
