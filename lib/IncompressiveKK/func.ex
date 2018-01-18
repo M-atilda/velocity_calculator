@@ -77,8 +77,6 @@ defmodule IncompressiveKK.Func do
           max_i = min (x_size-1), i+1
           min_j = max 0, j-1
           max_j = min (y_size-1), j+1
-          x_width = dx * (max_i - min_i)
-          y_width = dy * (max_j - min_j)
           df2dx2 = calcDiffusionHelper id(velocity, {max_i,j}), id(velocity, {i,j}), id(velocity, {min_i,j}), dx
           df2dy2 = calcDiffusionHelper id(velocity, {i,max_j}), id(velocity, {i,j}), id(velocity, {i,min_j}), dy
           (df2dx2 + df2dy2) / re

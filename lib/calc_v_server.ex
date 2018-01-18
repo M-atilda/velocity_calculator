@@ -35,7 +35,7 @@ defmodule CalcVServer do
   def genCalcServer kind do
     pid = spawn(__MODULE__, :calc_server, [kind])
     :global.register_name(getName(kind), pid)
-    IO.puts "[Info] start calc_v_server <#{inspect pid}>"
+    IO.puts "[Info] start calc_V_server <#{inspect pid}>"
   end
 
   def calc_server kind do
