@@ -5,7 +5,6 @@
 #       except time differential, all differences are calculated as central differences
 #         (when the velosity has positive value, artificial viscocities can be regarded as one-side differential)
 defmodule IncompressiveKK.Func do
-  import IncompressiveKK.Util
 
 
   def deriveVel kind, {x_velocity, y_velocity}=velocitys_field, pressure, bc_field,
@@ -151,6 +150,21 @@ defmodule IncompressiveKK.Func do
   end
   defp calcArtiViscHelper vel_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, delta do
     vel_ij * ((-f_ij2p + 8*f_ij1p - 8*f_ij1m + f_ij2m) / (12 * delta)) + abs(vel_ij) * ((f_ij2p - 4*f_ij1p + 6*f_ij - 4*f_ij1m + f_ij2m) / (4 * delta))
+  end
+
+
+  #NOTE: utility functions
+  def id enumerable, {i, j} do
+    Enum.at(Enum.at(enumerable, j), i)
+  end
+
+  def getFromKind kind, {x_factor, y_factor} do
+    case kind do
+      :u ->
+        x_factor
+      :v ->
+        y_factor
+    end
   end
 
 

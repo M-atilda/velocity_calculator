@@ -15,7 +15,6 @@ defmodule CalcVServer do
   @u_server_name :g_u_calc_server
   @v_server_name :g_v_calc_server
   import IncompressiveKK.Func
-  import IncompressiveKK.Util
 
 
   def calcVel kind, velocitys_field, pressure, bc_field, information do
@@ -46,7 +45,7 @@ defmodule CalcVServer do
         IO.puts "[Info] velocity calculation <#{inspect client}> #{inspect DateTime.utc_now}"
         try do
           result = deriveVel kind, velocitys_field, pressure, bc_field, information
-          IO.puts "[Info] calculation finished <#{inspect client}> #{inspect DateTime.utc_now}"
+          IO.puts "[Info] velocity calculation finished <#{inspect client}> #{inspect DateTime.utc_now}"
           send client, {:ok, result, self}
         rescue
           error ->
