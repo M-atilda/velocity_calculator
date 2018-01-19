@@ -26,20 +26,9 @@ defmodule IncompressiveKK.Func do
     left_down = Task.await left_down_task
     right_up = Task.await right_up_task
     right_down = Task.await right_down_task
-    Enum.map 0..(y_size-1), fn(j) ->
-      for i <- 0..(x_size-1) do
-        cond do
-          i<(x_half_size+1) && j<(y_half_size+1) ->
-            id(left_up, {i,j})
-          i<(x_half_size+1) && j>y_half_size ->
-            id(left_down, {i,j-y_half_size-1})
-          i>x_half_size && j<(y_half_size+1) ->
-            id(right_up, {i-x_half_size-1,j})
-          i>x_half_size && j>y_half_size ->
-            id(right_down, {i-x_half_size-1,j-y_half_size-1})
-        end
-      end
-    end
+    up_side = Enum.map :lists.zip(left_up, right_up), fn({l, r}) -> l ++ r end
+    down_side = Enum.map :lists.zip(left_down, right_down), fn({l, r}) -> l ++ r end
+    up_side ++ down_side
   end
   @spec deriveVelPartially({any, any}, atom, field, {field, field}, field, field, map) :: field
   defp deriveVelPartially {x_range, y_range}, kind, velocity, velocitys_field, pressure, bc_field,
