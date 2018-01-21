@@ -4,8 +4,9 @@ defmodule CalcVServerTest do
   @tag timeout: 600000
 
   test "calculate next step velocity" do
-    v_field = List.duplicate([0|List.duplicate(1, 400)], 201)
-    p_field = List.duplicate([0|List.duplicate(1, 400)], 201)
+    line = List.to_tuple [0.0|List.duplicate(1.0, 400)]
+    v_field = Tuple.duplicate(line, 201)
+    p_field = Tuple.duplicate(line, 201)
     bc_field = for j <- 0..200 do
       for i <- 0..400 do
         if 5<i && i<10 && 5<j && j<10 do
@@ -13,7 +14,10 @@ defmodule CalcVServerTest do
         else
           false
         end
-      end end
+      end
+      |> List.to_tuple
+    end
+    |> List.to_tuple
     CalcVServer.genCalcServer(:u)
     start_time = DateTime.utc_now
     result = CalcVServer.calcVel :u, {v_field, v_field}, p_field, bc_field,
@@ -26,6 +30,6 @@ defmodule CalcVServerTest do
     end_time = DateTime.utc_now
     IO.inspect start_time
     IO.inspect end_time
-    # IO.inspect result
+    IO.inspect result
   end
 end

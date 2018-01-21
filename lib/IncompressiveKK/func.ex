@@ -26,9 +26,9 @@ defmodule IncompressiveKK.Func do
     left_down = Task.await left_down_task
     right_up = Task.await right_up_task
     right_down = Task.await right_down_task
-    up_side = Enum.map :lists.zip(left_up, right_up), fn({l, r}) -> l ++ r end
-    down_side = Enum.map :lists.zip(left_down, right_down), fn({l, r}) -> l ++ r end
-    up_side ++ down_side
+    up_side = Enum.map :lists.zip(left_up, right_up), fn({l, r}) -> List.to_tuple(l ++ r) end
+    down_side = Enum.map :lists.zip(left_down, right_down), fn({l, r}) -> List.to_tuple(l ++ r) end
+    up_side ++ down_side |> List.to_tuple
   end
   @spec deriveVelPartially({any, any}, atom, field, {field, field}, field, field, map) :: field
   defp deriveVelPartially {x_range, y_range}, kind, velocity, velocitys_field, pressure, bc_field,
@@ -42,8 +42,8 @@ defmodule IncompressiveKK.Func do
     dy2 = dy*dy
     dx4 = 4*dx
     dy4 = 4*dy
-    for j <- y_range do
-      for i <- x_range do
+    field = for j <- y_range do
+      line = for i <- x_range do
         if !id(bc_field, {i,j}) do
           pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size
           d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
@@ -133,7 +133,7 @@ defmodule IncompressiveKK.Func do
   #NOTE: utility functions
   @spec id(field, {integer, integer}) :: any
   def id enumerable, {i, j} do
-    Enum.at(Enum.at(enumerable, j), i)
+    elem(elem(enumerable, j), i)
   end
 
   def getFromKind kind, {x_factor, y_factor} do
