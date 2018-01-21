@@ -12,15 +12,12 @@ defmodule CalcVServer do
 
   """
   def hello, do: :world
-  @u_server_name :g_u_calc_server
-  @v_server_name :g_v_calc_server
   import IncompressiveKK.Func
-
   @compile [:native, {:hipe, [:verbose, :o3]}]
 
 
-  def calcVel kind, velocitys_field, pressure, bc_field, information do
-    server = :global.whereis_name getName(kind)
+  def calcVel kind, velocitys_field, pressure, bc_field, information, name do
+    server = :global.whereis_name(Atom.to_string(kind) <> name)
     send server, {:calc, velocitys_field, pressure, bc_field, information, self}
     receive do
       {simbol, result, ^server} ->
@@ -35,9 +32,9 @@ defmodule CalcVServer do
     end
   end
 
-  def genCalcServer kind do
+  def genCalcServer name, kind do
     pid = spawn(__MODULE__, :calc_server, [kind])
-    :global.register_name(getName(kind), pid)
+    :global.register_name(Atom.to_string(kind) <> name, pid)
     IO.puts "[Info] start calc_V_server <#{inspect pid}>"
   end
 
@@ -58,10 +55,6 @@ defmodule CalcVServer do
   end
 
 
-  defp getName kind do
-    getFromKind kind, {@u_server_name, @v_server_name}
-  end
-
   def testMain do
     v_field = List.duplicate([0|List.duplicate(1, 400)], 201)
     p_field = List.duplicate([0|List.duplicate(1, 400)], 201)
@@ -73,7 +66,7 @@ defmodule CalcVServer do
           false
         end
       end end
-    CalcVServer.genCalcServer(:u)
+    CalcVServer.genCalcServer "test", :u
     start_time = DateTime.utc_now
     result = CalcVServer.calcVel :u, {v_field, v_field}, p_field, bc_field,
       %{:x_size => 401,

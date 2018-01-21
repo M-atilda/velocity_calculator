@@ -18,7 +18,7 @@ defmodule CalcVServerTest do
       |> List.to_tuple
     end
     |> List.to_tuple
-    CalcVServer.genCalcServer(:u)
+    CalcVServer.genCalcServer "test", :u
     start_time = DateTime.utc_now
     result = CalcVServer.calcVel :u, {v_field, v_field}, p_field, bc_field,
       %{:x_size => 401,
@@ -26,7 +26,7 @@ defmodule CalcVServerTest do
         :dx => 0.1,
         :dy => 0.1,
         :dt => 0.01,
-        :Re => 70}
+        :Re => 70}, "test"
     end_time = DateTime.utc_now
     IO.inspect start_time
     IO.inspect end_time
