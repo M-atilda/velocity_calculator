@@ -17,7 +17,7 @@ defmodule CalcVServer do
 
 
   def calcVel kind, velocitys_field, pressure, bc_field, information, name do
-    server = :global.whereis_name(Atom.to_string(kind) <> name)
+    server = :global.whereis_name(name <> "_" <> Atom.to_string(kind))
     send server, {:calc, velocitys_field, pressure, bc_field, information, self}
     receive do
       {simbol, result, ^server} ->
@@ -34,7 +34,7 @@ defmodule CalcVServer do
 
   def genCalcServer name, kind do
     pid = spawn(__MODULE__, :calc_server, [kind])
-    :global.register_name(Atom.to_string(kind) <> name, pid)
+    :global.register_name(name <> "_" <> Atom.to_string(kind), pid)
     IO.puts "[Info] start calc_V_server <#{inspect pid}>"
   end
 
@@ -74,7 +74,7 @@ defmodule CalcVServer do
         :dx => 0.1,
         :dy => 0.1,
         :dt => 0.01,
-        :Re => 70}
+        :Re => 70}, "test"
     end_time = DateTime.utc_now
     IO.inspect start_time
     IO.inspect end_time
