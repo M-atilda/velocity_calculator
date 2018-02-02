@@ -1,4 +1,4 @@
-#file   func.ex
+OB#file   func.ex
 #author mi-na
 #date   18/01/14
 #brief  calculate next step's velocity field following differential (Kawamura-Kuwahara) scheme
@@ -45,7 +45,7 @@ defmodule IncompressiveKK.Func do
     field = for j <- y_range do
       line = for i <- x_range do
         if !id(bc_field, {i,j}) do
-          pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size
+          pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
           d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
           av_result = calcArtiVisc i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size
           id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
@@ -57,25 +57,33 @@ defmodule IncompressiveKK.Func do
   end
 
 
-  @spec calcPreGrad(atom, integer, integer, field, float, float, integer, integer) :: float
-  defp calcPreGrad(:u, i,j, pressure, dx,_dy, x_size,y_size) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
+  @spec calcPreGrad(atom, integer, integer, field, float, float, integer, integer, map) :: float
+  defp calcPreGrad(:u, i,j, pressure, dx,_dy, x_size,y_size, bc_field) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
+    if !id(bc_field, {i-1,j}) or !id(bc_field, {i+1,j}) or !id(bc_field, {i,j-1}) or !id(bc_field, {i,j+1}) do
+      0
+    else
     (id(pressure, {i+1,j}) - id(pressure, {i-1,j})) / (2 * dx)
+    end
   end
-  defp calcPreGrad :u, i,j, pressure, dx,_dy, x_size, _y_size do
+  defp calcPreGrad :u, i,j, pressure, dx,_dy, x_size, _y_size, _bc_field do
     min_i = max 0, i-1
     max_i = min (x_size-1), i+1
     (id(pressure, {max_i,j}) - id(pressure, {min_i,j})) / dx
   end
-  defp calcPreGrad(:v, i,j, pressure, _dx,dy, x_size,y_size) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
+  defp calcPreGrad(:v, i,j, pressure, _dx,dy, x_size,y_size, bc_field) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
+    if !id(bc_field, {i-1,j}) or !id(bc_field, {i+1,j}) or !id(bc_field, {i,j-1}) or !id(bc_field, {i,j+1}) do
+      0
+    else
     (id(pressure, {i,j+1}) - id(pressure, {i,j-1})) / (2 * dy)
+    end
   end
-  defp calcPreGrad :v, i,j, pressure, _dx,dy, _x_size, y_size do
+  defp calcPreGrad :v, i,j, pressure, _dx,dy, _x_size, y_size, _bc_field do
     min_j = max 0, j-1
     max_j = min (y_size-1), j+1
     (id(pressure, {i,max_j}) - id(pressure, {i,min_j})) / dy
   end
   
-  @spec calcPreGrad(integer, integer, field, float, float, integer, integer, float) :: float
+  @spec calcDiffusion(integer, integer, field, float, float, integer, integer, float) :: float
   defp calcDiffusion(i,j, velocity, dx2,dy2, x_size,y_size, re) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
     df2dx2 = calcDiffusionHelper id(velocity, {i+1,j}), id(velocity, {i,j}), id(velocity, {i-1,j}), dx2
     df2dy2 = calcDiffusionHelper id(velocity, {i,j+1}), id(velocity, {i,j}), id(velocity, {i,j-1}), dy2
@@ -97,7 +105,7 @@ defmodule IncompressiveKK.Func do
   end
   
 
-  @spec calcPreGrad(integer, integer, field, {field, field}, float,float, integer,integer) :: float
+  @spec calcArtiVisc(integer, integer, field, {field, field}, float,float, integer,integer) :: float
   defp calcArtiVisc(i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
     udfdx = calcArtiViscX i,j, velocity, velocitys_field, dx4
     vdfdy = calcArtiViscY i,j, velocity, velocitys_field, dy4
