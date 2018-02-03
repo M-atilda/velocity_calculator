@@ -59,7 +59,7 @@ defmodule IncompressiveKK.Func do
 
   @spec calcPreGrad(atom, integer, integer, field, float, float, integer, integer, map) :: float
   defp calcPreGrad(:u, i,j, pressure, dx,_dy, x_size,y_size, bc_field) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
-    if !id(bc_field, {i-1,j}) or !id(bc_field, {i+1,j}) or !id(bc_field, {i,j-1}) or !id(bc_field, {i,j+1}) do
+    if !id(bc_field, {i-1,j}) or !id(bc_field, {i+1,j}) do
       0
     else
     (id(pressure, {i+1,j}) - id(pressure, {i-1,j})) / (2 * dx)
@@ -71,7 +71,7 @@ defmodule IncompressiveKK.Func do
     (id(pressure, {max_i,j}) - id(pressure, {min_i,j})) / dx
   end
   defp calcPreGrad(:v, i,j, pressure, _dx,dy, x_size,y_size, bc_field) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
-    if !id(bc_field, {i-1,j}) or !id(bc_field, {i+1,j}) or !id(bc_field, {i,j-1}) or !id(bc_field, {i,j+1}) do
+    if !id(bc_field, {i,j-1}) or !id(bc_field, {i,j+1}) do
       0
     else
     (id(pressure, {i,j+1}) - id(pressure, {i,j-1})) / (2 * dy)
