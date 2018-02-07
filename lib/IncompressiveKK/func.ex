@@ -57,6 +57,7 @@ defmodule IncompressiveKK.Func do
               d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
               av_result = calcArtiVisc i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size
               id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
+          end
         else
           id(bc_field, {i,j})
         end
