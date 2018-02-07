@@ -1,4 +1,4 @@
-OB#file   func.ex
+#file   func.ex
 #author mi-na
 #date   18/01/14
 #brief  calculate next step's velocity field following differential (Kawamura-Kuwahara) scheme
@@ -45,10 +45,18 @@ defmodule IncompressiveKK.Func do
     field = for j <- y_range do
       line = for i <- x_range do
         if !id(bc_field, {i,j}) do
-          pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
-          d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
-          av_result = calcArtiVisc i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size
-          id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
+          cond do
+            i == (x_size-1) ->
+              2 * id(velocity, {i-1,j}) - id(velocity, {i-2,j})
+            j == 0 ->
+              2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
+            j == (y_size-1) ->
+              2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
+              true ->
+              pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
+              d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
+              av_result = calcArtiVisc i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size
+              id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
         else
           id(bc_field, {i,j})
         end
