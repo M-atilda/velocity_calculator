@@ -55,7 +55,7 @@ defmodule IncompressiveKK.Func do
               true ->
               pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
               d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
-              av_result = calcArtiVisc i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size
+              av_result = calcArtiVisc i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size
               id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
           end
         else
@@ -99,20 +99,32 @@ defmodule IncompressiveKK.Func do
     df2dy2 = calcDiffusionHelper id(velocity, {i,max_j}), id(velocity, {i,j}), id(velocity, {i,min_j}), dy2
     (df2dx2 + df2dy2) / re
   end
-
   @spec calcDiffusionHelper(float, float, float, float) :: float
   defp calcDiffusionHelper f_ij1p, f_ij, f_ij1m, delta2 do
     ((f_ij1p - f_ij) - (f_ij - f_ij1m)) / delta2
   end
   
 
-  @spec calcArtiVisc(integer, integer, field, {field, field}, float,float, integer,integer) :: float
-  defp calcArtiVisc(i,j, velocity, velocitys_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
-    udfdx = calcArtiViscX i,j, velocity, velocitys_field, dx4
-    vdfdy = calcArtiViscY i,j, velocity, velocitys_field, dy4
+  @spec calcArtiVisc(integer, integer, field, {field, field}, map, float,float, integer,integer) :: float
+  defp calcArtiVisc(i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
+    #TODO: more flexible (it may not suitable for circle column)
+    fixed_i = cond do
+      !id(bc_field, {i+2, j}) ->
+        i-2
+      !id(bc_field, {i-2, j}) ->
+        i+2
+    end
+    fixed_j = cond do
+      !id(bc_field, {i, j+2}) ->
+        j-2
+      !id(bc_field, {i, j-2}) ->
+        j+2      
+    end
+    udfdx = calcArtiViscX fixed_i,fixed_j, velocity, velocitys_field, dx4
+    vdfdy = calcArtiViscY fixed_i,fixed_j, velocity, velocitys_field, dy4
     udfdx + vdfdy
   end
-  defp calcArtiVisc(_i,_j, _velocity, _velocitys_field, _dx,_dy, _x_size,_y_size), do: 0
+  defp calcArtiVisc(_i,_j, _velocity, _velocitys_field, _bc_field, _dx,_dy, _x_size,_y_size), do: 0
   @spec calcArtiViscX(integer, integer, field, {field, field}, float) :: float
   defp calcArtiViscX i,j, f, {u, _v}, dx4 do
     f_ij = id(f, {i,j})
