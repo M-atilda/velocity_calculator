@@ -52,7 +52,7 @@ defmodule IncompressiveKK.Func do
               2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
             j == (y_size-1) ->
               2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
-              true ->
+            true ->
               pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
               d_result = calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re
               av_result = calcArtiVisc i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size
@@ -83,7 +83,7 @@ defmodule IncompressiveKK.Func do
     max_j = min (y_size-1), j+1
     (id(pressure, {i,max_j}) - id(pressure, {i,min_j})) / dy
   end
-  
+
   @spec calcDiffusion(integer, integer, field, float, float, integer, integer, float) :: float
   defp calcDiffusion(i,j, velocity, dx2,dy2, x_size,y_size, re) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
     df2dx2 = calcDiffusionHelper id(velocity, {i+1,j}), id(velocity, {i,j}), id(velocity, {i-1,j}), dx2
@@ -103,13 +103,13 @@ defmodule IncompressiveKK.Func do
   defp calcDiffusionHelper f_ij1p, f_ij, f_ij1m, delta2 do
     ((f_ij1p - f_ij) - (f_ij - f_ij1m)) / delta2
   end
-  
+
 
   @spec calcArtiVisc(integer, integer, field, {field, field}, map, float,float, integer,integer) :: float
   defp calcArtiVisc(i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
     #TODO: more flexible (it may not suitable for circle column)
     #NOTE: remove edge's conditions
-    fixed_i = if 3<i && i<(x_size-4) do
+    fixed_i = if 5<i && i<(x_size-1-5) do
       cond do
         !id(bc_field, {i+2, j}) ->
           i-2
@@ -121,7 +121,7 @@ defmodule IncompressiveKK.Func do
     else
       i
     end
-    fixed_j = if 3<j && j<(y_size-4) do
+    fixed_j = if 5<j && j<(y_size-1-5) do
       cond do
       !id(bc_field, {i, j+2}) ->
         j-2
@@ -162,8 +162,8 @@ defmodule IncompressiveKK.Func do
   defp calcArtiViscHelper vel_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, delta4 do
     vel_ij * ((-f_ij2p + 8*f_ij1p - 8*f_ij1m + f_ij2m) / (3 * delta4)) + abs(vel_ij) * ((f_ij2p - 4*f_ij1p + 6*f_ij - 4*f_ij1m + f_ij2m) / delta4)
   end
-  
-  
+
+
   #NOTE: utility functions
   @spec id(field, {integer, integer}) :: any
   def id enumerable, {i, j} do
