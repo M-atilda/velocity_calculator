@@ -108,17 +108,22 @@ defmodule IncompressiveKK.Func do
   @spec calcArtiVisc(integer, integer, field, {field, field}, map, float,float, integer,integer) :: float
   defp calcArtiVisc(i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
     #TODO: more flexible (it may not suitable for circle column)
+    #NOTE: remove edge's conditions
     fixed_i = cond do
       !id(bc_field, {i+2, j}) ->
         i-2
       !id(bc_field, {i-2, j}) ->
         i+2
+      true ->
+        i
     end
     fixed_j = cond do
       !id(bc_field, {i, j+2}) ->
         j-2
       !id(bc_field, {i, j-2}) ->
-        j+2      
+        j+2
+      true ->
+        j
     end
     udfdx = calcArtiViscX fixed_i,fixed_j, velocity, velocitys_field, dx4
     vdfdy = calcArtiViscY fixed_i,fixed_j, velocity, velocitys_field, dy4
