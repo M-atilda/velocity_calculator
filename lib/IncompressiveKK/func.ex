@@ -71,6 +71,8 @@ defmodule IncompressiveKK.Func do
                 2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
               !id(bc_field, {i,j+2}) ->
                 2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
+              true ->
+                id(bc_field, {i,j})
             end
           else
             id(bc_field, {i,j})
