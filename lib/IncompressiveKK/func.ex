@@ -16,19 +16,22 @@ defmodule IncompressiveKK.Func do
                  :u -> x_velocity
                  :v -> y_velocity
                end
-    x_half_size = round((x_size-1) / 2)
-    y_half_size = round((y_size-1) / 2)
-    left_up_task = Task.async(fn -> deriveVelPartially {0..x_half_size, 0..y_half_size}, kind, velocity, velocitys_field, pressure, bc_field, information end)
-    left_down_task = Task.async(fn -> deriveVelPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, kind, velocity, velocitys_field, pressure, bc_field, information end)
-    right_up_task = Task.async(fn -> deriveVelPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, kind, velocity, velocitys_field, pressure, bc_field, information end)
-    right_down_task = Task.async(fn -> deriveVelPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, kind, velocity, velocitys_field, pressure, bc_field, information end)
-    left_up = Task.await left_up_task
-    left_down = Task.await left_down_task
-    right_up = Task.await right_up_task
-    right_down = Task.await right_down_task
-    up_side = Enum.map :lists.zip(left_up, right_up), fn({l, r}) -> List.to_tuple(l ++ r) end
-    down_side = Enum.map :lists.zip(left_down, right_down), fn({l, r}) -> List.to_tuple(l ++ r) end
-    up_side ++ down_side |> List.to_tuple
+    # x_half_size = round((x_size-1) / 2)
+    # y_half_size = round((y_size-1) / 2)
+    # left_up_task = Task.async(fn -> deriveVelPartially {0..x_half_size, 0..y_half_size}, kind, velocity, velocitys_field, pressure, bc_field, information end)
+    # left_down_task = Task.async(fn -> deriveVelPartially {0..x_half_size, (y_half_size+1)..(y_size-1)}, kind, velocity, velocitys_field, pressure, bc_field, information end)
+    # right_up_task = Task.async(fn -> deriveVelPartially {(x_half_size+1)..(x_size-1), 0..y_half_size}, kind, velocity, velocitys_field, pressure, bc_field, information end)
+    # right_down_task = Task.async(fn -> deriveVelPartially {(x_half_size+1)..(x_size-1), (y_half_size+1)..(y_size-1)}, kind, velocity, velocitys_field, pressure, bc_field, information end)
+    # left_up = Task.await left_up_task
+    # left_down = Task.await left_down_task
+    # right_up = Task.await right_up_task
+    # right_down = Task.await right_down_task
+    # up_side = Enum.map :lists.zip(left_up, right_up), fn({l, r}) -> List.to_tuple(l ++ r) end
+    # down_side = Enum.map :lists.zip(left_down, right_down), fn({l, r}) -> List.to_tuple(l ++ r) end
+    # up_side ++ down_side |> List.to_tuple
+    deriveVelPartially({0..(x_size-1), 0..(y_size-1)}, kind, velocity, velocitys_field, pressure, bc_field, information)
+    |> Enum.map(&(List.to_tuple &1))
+    |> List.to_tuple
   end
   @spec deriveVelPartially({any, any}, atom, field, {field, field}, field, field, map) :: field
   defp deriveVelPartially {x_range, y_range}, kind, velocity, velocitys_field, pressure, bc_field,
