@@ -42,15 +42,15 @@ defmodule IncompressiveKK.Func do
     dy2 = dy*dy
     dx4 = 4*dx
     dy4 = 4*dy
-    field = for j <- y_range do
-      line = for i <- x_range do
+    for j <- y_range do
+      for i <- x_range do
         if !id(bc_field, {i,j}) do
           cond do
-            i == (x_size-1) ->
+            i == (x_size-1) || i == (x_size-2) ->
               2 * id(velocity, {i-1,j}) - id(velocity, {i-2,j})
-            j == 0 ->
+            j == 0 || j == 1 ->
               2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
-            j == (y_size-1) ->
+            j == (y_size-1) || j == (y_size-2) ->
               2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
             true ->
               pg_result = calcPreGrad kind, i,j, pressure, dx,dy, x_size,y_size, bc_field
@@ -63,7 +63,7 @@ defmodule IncompressiveKK.Func do
           #NOTE: eliminate edges condition
           if 4<i && i<(x_size-1-4) && 4<j && j<(y_size-1-4) do
             cond do
-              !id(bc_field, {i-2,j}) && id(bc_field, {i-1,j})  ->
+              !id(bc_field, {i-2,j}) && id(bc_field, {i-1,j}) ->
                 2 * id(velocity, {i-1,j}) - id(velocity, {i-2,j})
               !id(bc_field, {i+2,j}) && id(bc_field, {i+1,j}) ->
                 2 * id(velocity, {i+1,j}) - id(velocity, {i+2,j})
@@ -88,17 +88,19 @@ defmodule IncompressiveKK.Func do
     (id(pressure, {i+1,j}) - id(pressure, {i-1,j})) / (2 * dx)
   end
   defp calcPreGrad :u, i,j, pressure, dx,_dy, x_size, _y_size, _bc_field do
-    min_i = max 0, i-1
-    max_i = min (x_size-1), i+1
-    (id(pressure, {max_i,j}) - id(pressure, {min_i,j})) / dx
+    # min_i = max 0, i-1
+    # max_i = min (x_size-1), i+1
+    # (id(pressure, {max_i,j}) - id(pressure, {min_i,j})) / dx
+    0.0
   end
   defp calcPreGrad(:v, i,j, pressure, _dx,dy, x_size,y_size, bc_field) when 0<i and 0<j and i<(x_size-1) and j<(y_size-1) do
     (id(pressure, {i,j+1}) - id(pressure, {i,j-1})) / (2 * dy)
   end
   defp calcPreGrad :v, i,j, pressure, _dx,dy, _x_size, y_size, _bc_field do
-    min_j = max 0, j-1
-    max_j = min (y_size-1), j+1
-    (id(pressure, {i,max_j}) - id(pressure, {i,min_j})) / dy
+    # min_j = max 0, j-1
+    # max_j = min (y_size-1), j+1
+    # (id(pressure, {i,max_j}) - id(pressure, {i,min_j})) / dy
+    0.0
   end
 
   @spec calcDiffusion(integer, integer, field, float, float, integer, integer, float) :: float
@@ -108,13 +110,14 @@ defmodule IncompressiveKK.Func do
     (df2dx2 + df2dy2) / re
   end
   defp calcDiffusion i,j, velocity, dx2,dy2, x_size,y_size, re do
-    min_i = max 0, i-1
-    max_i = min (x_size-1), i+1
-    min_j = max 0, j-1
-    max_j = min (y_size-1), j+1
-    df2dx2 = calcDiffusionHelper id(velocity, {max_i,j}), id(velocity, {i,j}), id(velocity, {min_i,j}), dx2
-    df2dy2 = calcDiffusionHelper id(velocity, {i,max_j}), id(velocity, {i,j}), id(velocity, {i,min_j}), dy2
-    (df2dx2 + df2dy2) / re
+    # min_i = max 0, i-1
+    # max_i = min (x_size-1), i+1
+    # min_j = max 0, j-1
+    # max_j = min (y_size-1), j+1
+    # df2dx2 = calcDiffusionHelper id(velocity, {max_i,j}), id(velocity, {i,j}), id(velocity, {min_i,j}), dx2
+    # df2dy2 = calcDiffusionHelper id(velocity, {i,max_j}), id(velocity, {i,j}), id(velocity, {i,min_j}), dy2
+    # (df2dx2 + df2dy2) / re
+    0.0
   end
   @spec calcDiffusionHelper(float, float, float, float) :: float
   defp calcDiffusionHelper f_ij1p, f_ij, f_ij1m, delta2 do
@@ -153,7 +156,7 @@ defmodule IncompressiveKK.Func do
   end
   @spec calcArtiViscHelper(float, float, float, float, float, float, float) :: float
   defp calcArtiViscHelper vel_ij, f_ij, f_ij1p, f_ij2p, f_ij1m, f_ij2m, delta4 do
-    vel_ij * ((-f_ij2p + 8*f_ij1p - 8*f_ij1m + f_ij2m) / (3 * delta4)) + abs(vel_ij) * ((f_ij2p - 4*f_ij1p + 6*f_ij - 4*f_ij1m + f_ij2m) / delta4)
+    (vel_ij * ((-f_ij2p + 8*f_ij1p - 8*f_ij1m + f_ij2m) / (3 * delta4)) + abs(vel_ij) * ((f_ij2p - 4*f_ij1p + 6*f_ij - 4*f_ij1m + f_ij2m) / delta4))
   end
 
 
