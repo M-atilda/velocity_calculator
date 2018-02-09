@@ -59,7 +59,22 @@ defmodule IncompressiveKK.Func do
               id(velocity, {i,j}) + dt * (-pg_result + d_result - av_result)
           end
         else
-          id(bc_field, {i,j})
+          #TODO: more flexible
+          #NOTE: eliminate edges condition
+          if 4<i && i<(x_size-1-4) && 4<j && j<(y_size-1-4) do
+            cond do
+              !id(bc_field, {i-2,j}) ->
+                2 * id(velocity, {i-1,j}) - id(velocity, {i-2,j})
+              !id(bc_field, {i+2,j}) ->
+                2 * id(velocity, {i+1,j}) - id(velocity, {i+2,j})
+              !id(bc_field, {i,j-2}) ->
+                2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
+              !id(bc_field, {i,j+2}) ->
+                2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
+            end
+          else
+            id(bc_field, {i,j})
+          end
         end
       end
     end
@@ -109,32 +124,8 @@ defmodule IncompressiveKK.Func do
   defp calcArtiVisc(i,j, velocity, velocitys_field, bc_field, dx4,dy4, x_size,y_size) when 1<i and 1<j and i<(x_size-2) and j<(y_size-2) do
     #TODO: more flexible (it may not suitable for circle column)
     #NOTE: remove edge's conditions
-    fixed_i = if 5<i && i<(x_size-1-5) do
-      cond do
-        !id(bc_field, {i+2, j}) ->
-          i-2
-        !id(bc_field, {i-2, j}) ->
-          i+2
-        true ->
-          i
-      end
-    else
-      i
-    end
-    fixed_j = if 5<j && j<(y_size-1-5) do
-      cond do
-      !id(bc_field, {i, j+2}) ->
-        j-2
-      !id(bc_field, {i, j-2}) ->
-        j+2
-      true ->
-          j
-      end
-    else
-      j
-    end
-    udfdx = calcArtiViscX fixed_i,fixed_j, velocity, velocitys_field, dx4
-    vdfdy = calcArtiViscY fixed_i,fixed_j, velocity, velocitys_field, dy4
+    udfdx = calcArtiViscX i,j, velocity, velocitys_field, dx4
+    vdfdy = calcArtiViscY i,j, velocity, velocitys_field, dy4
     udfdx + vdfdy
   end
   defp calcArtiVisc(_i,_j, _velocity, _velocitys_field, _bc_field, _dx,_dy, _x_size,_y_size), do: 0
