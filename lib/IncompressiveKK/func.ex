@@ -63,13 +63,13 @@ defmodule IncompressiveKK.Func do
           #NOTE: eliminate edges condition
           if 4<i && i<(x_size-1-4) && 4<j && j<(y_size-1-4) do
             cond do
-              !id(bc_field, {i-2,j}) ->
+              !id(bc_field, {i-2,j}) && id(bc_field, {i-1,j})  ->
                 2 * id(velocity, {i-1,j}) - id(velocity, {i-2,j})
-              !id(bc_field, {i+2,j}) ->
+              !id(bc_field, {i+2,j}) && id(bc_field, {i+1,j}) ->
                 2 * id(velocity, {i+1,j}) - id(velocity, {i+2,j})
-              !id(bc_field, {i,j-2}) ->
+              !id(bc_field, {i,j-2}) && id(bc_field, {i,j-1}) ->
                 2 * id(velocity, {i,j-1}) - id(velocity, {i,j-2})
-              !id(bc_field, {i,j+2}) ->
+              !id(bc_field, {i,j+2}) && id(bc_field, {i,j+1}) ->
                 2 * id(velocity, {i,j+1}) - id(velocity, {i,j+2})
               true ->
                 id(bc_field, {i,j})
